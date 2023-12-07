@@ -48,14 +48,12 @@ if container_exists; then
         docker run \
             --name $CONTAINER_NAME \
             --mount type=bind,source="$(pwd)",target=/host \
-            --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
             -it $IMAGE_NAME \
             bash -c "cd /host/$SCRIPT_DIR && ./$(basename $SCRIPT_TO_RUN)"
       else
         docker run \
             --name $CONTAINER_NAME \
             --mount type=bind,source="$(pwd)",target=/host \
-            --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
             -it $IMAGE_NAME \
             /bin/bash
       fi
@@ -79,14 +77,12 @@ else
     docker run \
         --name $CONTAINER_NAME \
         --mount type=bind,source="$(pwd)",target=/host \
-        --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
         -it $IMAGE_NAME \
         bash -c "cd /host/$SCRIPT_DIR && ./$(basename $SCRIPT_TO_RUN)"
   else
     docker run \
         --name $CONTAINER_NAME \
         --mount type=bind,source="$(pwd)",target=/host \
-        --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
         -it $IMAGE_NAME \
         /bin/bash
   fi
