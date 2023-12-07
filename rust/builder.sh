@@ -17,6 +17,11 @@ get_container_image() {
   docker inspect --format='{{.Config.Image}}' $CONTAINER_NAME
 }
 
+# Function to clear Cargo's lock files
+clear_cargo_locks() {
+  docker exec -it $CONTAINER_NAME find /host/$SCRIPT_DIR -name '.cargo-ok' -delete
+}
+
 # Process command-line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -34,6 +39,9 @@ SCRIPT_DIR=$(dirname "$SCRIPT_TO_RUN")
 if container_exists; then
   echo "Container $CONTAINER_NAME already exists."
   
+  # Clear any existing Cargo lock files
+  clear_cargo_locks
+
   # Check if the existing container was created with a different image
   if [ "$(get_container_image)" != "$IMAGE_NAME" ]; then
     echo "Existing container was created with a different image. Updating image..."
