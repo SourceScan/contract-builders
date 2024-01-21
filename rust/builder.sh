@@ -1,26 +1,11 @@
 #!/bin/bash
 
-# Default image and container names
+# Default image and container name
 DEFAULT_IMAGE="nearprotocol/contract-builder:latest-amd64"
 CONTAINER_NAME="sourcescan-builder-rust"
 
 IMAGE_NAME=$DEFAULT_IMAGE
 SCRIPT_TO_RUN=""
-
-# Function to check if a container exists
-container_exists() {
-  docker ps -a --format '{{.Names}}' | grep -qw $CONTAINER_NAME
-}
-
-# Function to get the image of an existing container
-get_container_image() {
-  docker inspect --format='{{.Config.Image}}' $CONTAINER_NAME
-}
-
-# Function to clear Cargo's lock files
-clear_cargo_locks() {
-  docker exec -it $CONTAINER_NAME find /host/$SCRIPT_DIR -name '.cargo-ok' -delete
-}
 
 # Process command-line arguments
 while [[ "$#" -gt 0 ]]; do
@@ -35,63 +20,17 @@ done
 # Extract the directory part of the script path
 SCRIPT_DIR=$(dirname "$SCRIPT_TO_RUN")
 
-# Check if the container exists
-if container_exists; then
-  echo "Container $CONTAINER_NAME already exists."
-  
-  # Clear any existing Cargo lock files
-  clear_cargo_locks
-
-  # Check if the existing container was created with a different image
-  if [ "$(get_container_image)" != "$IMAGE_NAME" ]; then
-    echo "Existing container was created with a different image. Updating image..."
-    docker stop $CONTAINER_NAME
-    docker rm $CONTAINER_NAME
-
-    # Check if the container was successfully removed
-    if ! container_exists; then
-      echo "Container successfully removed. Creating a new one..."
-      # Logic for creating a new container
-      if [ -n "$SCRIPT_TO_RUN" ]; then
-        docker run \
-            --name $CONTAINER_NAME \
-            --mount type=bind,source="$(pwd)",target=/host \
-            -it $IMAGE_NAME \
-            bash -c "cd /host/$SCRIPT_DIR && ./$(basename $SCRIPT_TO_RUN)"
-      else
-        docker run \
-            --name $CONTAINER_NAME \
-            --mount type=bind,source="$(pwd)",target=/host \
-            -it $IMAGE_NAME \
-            /bin/bash
-      fi
-    else
-      echo "Failed to remove the container. Please check Docker status."
-      exit 1
-    fi
-  else
-    # Logic for reusing existing container
-    if [ -n "$SCRIPT_TO_RUN" ]; then
-      docker start $CONTAINER_NAME
-      docker exec -it $CONTAINER_NAME bash -c "cd /host/$SCRIPT_DIR && ./$(basename $SCRIPT_TO_RUN)"
-    else
-      docker start -ai $CONTAINER_NAME
-    fi
-  fi
-else
-  echo "Creating a new container..."
-  # Logic for creating a new container
-  if [ -n "$SCRIPT_TO_RUN" ]; then
+# Logic to run the container with the specified script
+if [ -n "$SCRIPT_TO_RUN" ]; then
     docker run \
         --name $CONTAINER_NAME \
         --mount type=bind,source="$(pwd)",target=/host \
-        -it $IMAGE_NAME \
+        --rm -it $IMAGE_NAME \
         bash -c "cd /host/$SCRIPT_DIR && ./$(basename $SCRIPT_TO_RUN)"
-  else
+else
     docker run \
         --name $CONTAINER_NAME \
         --mount type=bind,source="$(pwd)",target=/host \
-        -it $IMAGE_NAME \
+        --rm -it $IMAGE_NAME \
         /bin/bash
-  fi
 fi
